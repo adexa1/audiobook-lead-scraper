@@ -8,15 +8,20 @@ from amazoncaptcha import AmazonCaptcha
 # ── Configuration ─────────────────────────────────────────────────────────────
 
 TARGET_GENRES = {
-    "Thriller": "https://www.amazon.com/Best-Sellers-Books-Mystery-Thriller-Suspense/zgbs/books/18/",
-    "Sci-Fi": "https://www.amazon.com/Best-Sellers-Books-Science-Fiction-Fantasy/zgbs/books/25/",
-    "Self-Help": "https://www.amazon.com/Best-Sellers-Books-Self-Help/zgbs/books/4736/"
+    "Self-Help": "https://www.amazon.com/Best-Sellers-Books-Self-Help/zgbs/books/4736/",
+    "Business": "https://www.amazon.com/Best-Sellers-Books-Business-Money/zgbs/books/2/",
+    "Health & Fitness": "https://www.amazon.com/Best-Sellers-Books-Health-Fitness-Dieting/zgbs/books/6/",
+    "Personal Finance": "https://www.amazon.com/Best-Sellers-Books-Personal-Finance/zgbs/books/3741457011/",
+    "Parenting": "https://www.amazon.com/Best-Sellers-Books-Parenting-Relationships/zgbs/books/4/",
+    "Biographies": "https://www.amazon.com/Best-Sellers-Books-Biographies-Memoirs/zgbs/books/3/",
+    "Religion & Spirituality": "https://www.amazon.com/Best-Sellers-Books-Religion-Spirituality/zgbs/books/22/",
+    "Politics & Social Sciences": "https://www.amazon.com/Best-Sellers-Books-Politics-Social-Sciences/zgbs/books/13/"
 }
 
 MIN_RATING = 4.3
 MIN_REVIEWS = 100
-MAX_PAGES = 3
-PAGE_TIMEOUT = 120000  # 2 minutes per page
+MAX_PAGES = 2
+PAGE_TIMEOUT = 120000
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -127,10 +132,13 @@ async def scrape_genre(browser_context, genre_name: str, base_url: str, seen_tit
 
             for item in items:
                 try:
+                    # Title
                     title_el = await item.query_selector(
-                        'div._cDEBy_p13n-sc-css-line-clamp-1_1Fn1y, '
-                        'span._cDEBy_p13n-sc-css-line-clamp-3_1Fn1y, '
-                        'h2, .p13n-sc-truncated'
+                        'h2, '
+                        '._cDEBy_p13n-sc-css-line-clamp-1_1Fn1y, '
+                        '._cDEBy_p13n-sc-css-line-clamp-3_1Fn1y, '
+                        '.p13n-sc-truncated, '
+                        'span[class*="line-clamp"]'
                     )
                     title = (await title_el.inner_text()).strip() if title_el else "Unknown Title"
 
@@ -138,10 +146,12 @@ async def scrape_genre(browser_context, genre_name: str, base_url: str, seen_tit
                         continue
                     seen_titles.add(title)
 
-                    rating_el = await item.query_selector('.a-icon-row .a-icon-alt')
+                    # Rating
+                    rating_el = await item.query_selector('.a-icon-alt, [aria-label*="stars"]')
                     rating_text = await rating_el.inner_text() if rating_el else "0"
                     rating = float(rating_text.split()[0]) if rating_text else 0.0
 
+                    # Reviews
                     review_el = await item.query_selector('.a-size-small .a-link-normal')
                     review_text = await review_el.inner_text() if review_el else "0"
                     reviews = int(review_text.replace(",", "")) if review_text else 0
@@ -149,6 +159,7 @@ async def scrape_genre(browser_context, genre_name: str, base_url: str, seen_tit
                     if rating < MIN_RATING or reviews < MIN_REVIEWS:
                         continue
 
+                    # Book URL
                     link_el = await item.query_selector("a")
                     relative = await link_el.get_attribute("href") if link_el else ""
                     book_url = "https://www.amazon.com" + relative if relative else ""
