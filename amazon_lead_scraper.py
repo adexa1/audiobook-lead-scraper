@@ -1,6 +1,5 @@
 import asyncio
 import csv
-import os
 import random
 from playwright.async_api import async_playwright
 from playwright_stealth import stealth_async
@@ -18,15 +17,6 @@ MIN_RATING = 4.3
 MIN_REVIEWS = 100
 MAX_PAGES = 3
 PAGE_TIMEOUT = 120000  # 2 minutes per page
-
-# Load proxy from GitHub Secret and normalise to HTTP on port 823
-_raw_proxy = os.environ.get("PROXY_URL", "")
-if _raw_proxy:
-    PROXY_SERVER = _raw_proxy.replace("socks5://", "http://").replace(":824", ":823")
-else:
-    PROXY_SERVER = None
-
-print(f"[*] Proxy configured: {'Yes' if PROXY_SERVER else 'No'}")
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -205,18 +195,23 @@ async def scrape_genre(browser_context, genre_name: str, base_url: str, seen_tit
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 async def main():
-    launch_args = {"headless": True}
-    if PROXY_SERVER:
-        launch_args["proxy"] = {"server": PROXY_SERVER}
-
     async with async_playwright() as p:
-        browser = await p.chromium.launch(**launch_args)
+        browser = await p.chromium.launch(headless=True)
         browser_context = await browser.new_context(
             user_agent=(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/124.0.0.0 Safari/537.36"
-            )
+            ),
+            extra_http_headers={
+                "Accept-Language": "en-US,en;q=0.9",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+            },
+            locale="en-US",
+            timezone_id="America/New_York",
+            viewport={"width": 1280, "height": 800},
         )
 
         all_leads = []
