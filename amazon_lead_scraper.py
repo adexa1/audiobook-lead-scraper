@@ -19,7 +19,8 @@ MIN_REVIEWS = 100
 MAX_PAGES = 3  # Number of paginated pages to scrape per genre
 
 # Proxy is loaded from the PROXY_URL GitHub Secret — never hardcode credentials here
-PROXY_SERVER = os.environ.get("PROXY_URL")  # None if secret not set; script runs without proxy
+raw_proxy = os.environ.get("PROXY_URL", "")
+PROXY_SERVER = raw_proxy.replace("socks5://", "http://").replace(":824", ":823") if raw_proxy else None  # None if secret not set; script runs without proxy
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -106,7 +107,7 @@ async def get_book_details(browser_context, book_url: str) -> dict:
     details = {"author": "Unknown", "has_audio": False}
 
     try:
-        await page.goto(book_url, wait_until="domcontentloaded", timeout=60000)
+        await page.goto(url, wait_until="domcontentloaded", timeout=120000)
 
         if not await handle_captcha(page):
             return details
