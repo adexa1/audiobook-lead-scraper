@@ -21,9 +21,7 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install -r requirements.txt
-          pip install playwright==1.44.0
-          python -m playwright install chromium
-          python -m playwright install-deps chromium
+          python -m playwright install --with-deps chromium
 
       - name: Execute Scraper Script
         env:
