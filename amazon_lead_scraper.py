@@ -262,8 +262,12 @@ async def main():
         launch_args["proxy"] = {"server": PROXY_SERVER}
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(**launch_args)
         browser_context = await browser.new_context(
+            proxy={
+                "server": PROXY_SERVER,
+                "username": PROXY_SERVER.split("://")[1].split(":")[0],
+                "password": PROXY_SERVER.split(":")[2].split("@")[0]
+            } if PROXY_SERVER else {},
             user_agent=(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
